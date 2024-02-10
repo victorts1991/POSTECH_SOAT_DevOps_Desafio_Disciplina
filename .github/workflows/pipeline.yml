@@ -59,7 +59,7 @@ jobs:
     environment: 
       name: prod
     needs: publish
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Deploy
         shell: bash
