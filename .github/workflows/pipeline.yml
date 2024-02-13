@@ -22,18 +22,48 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: jacoco-report
-          path: target/site/jacoco
+          path: target/site/jacoco 
   
-  build:
+  code-analisys:
     runs-on: ubuntu-latest
     needs: unit-test
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Package
-      run: mvn package
-  
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set Up JDK 17 # Sonar needs JDK 17 for work
+        uses: actions/setup-java@v1
+        with:
+          java-version: '17'
+      - name: Cache SonarCloud Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build and Analisys
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.organization=victorts1991 -Dsonar.projectkey=com.dev.cicd:data      
+
+  build:
+    runs-on: ubuntu-latest
+    needs: code-analisys
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Package
+        run: mvn package
+
   publish:
     runs-on: ubuntu-latest
     needs: build
